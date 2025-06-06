@@ -25,14 +25,21 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 async function run() {
   try {
    
+      const database=client.db('mindHive');
+      const articlesCollection=database.collection('articles');
 
+      app.post('/post-article', async(req,res)=>{
+        const articleData=req.body;
+        const result = await articlesCollection.insertOne(articleData);
+        res.send(result);
+      })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
+    // await client.close();
   }
 }
 run().catch(console.dir);
