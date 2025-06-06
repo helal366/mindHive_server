@@ -3,7 +3,7 @@ require('dotenv').config();
 const cors = require('cors');
 const app=express();
 const port=process.env.PORT || 3000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 // middlewire
@@ -38,6 +38,17 @@ async function run() {
       app.get('/articles',async(req,res)=>{
         const allArticles=await articlesCollection.find().toArray();
         res.send(allArticles)
+      });
+
+      // get a single article by id
+      app.get('/article/:id', async(req,res)=>{
+        const id=req.params.id;
+        const filter={
+          _id: new ObjectId(id)
+        };
+        const result=await articlesCollection.findOne(filter);
+        res.send(result)
+        
       })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
