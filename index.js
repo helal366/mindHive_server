@@ -43,7 +43,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req,res)=>{
-    res.send('Welcome to mind hive!')
+    res.send(`Welcome to mind hive!`)
 });
 app.listen(port, ()=>{
     console.log(`The server is running on the port, ${port}`)
