@@ -32,7 +32,7 @@ async function run() {
       // jwt post api
       app.post('/jwt', (req,res)=>{
         const user={email:req.body.email};
-        const token=jwt.sign(user, 'secret', {
+        const token=jwt.sign(user, process.env.JWT_SECRET_KEY, {
           expiresIn: '365d'
         });
         res.send({token, message: 'JWT created successfully!'})
