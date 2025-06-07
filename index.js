@@ -28,6 +28,15 @@ async function run() {
    
       const database=client.db('mindHive');
       const articlesCollection=database.collection('articles');
+
+      // jwt post api
+      app.post('/jwt', (req,res)=>{
+        const user={email:req.body.email};
+        const token=jwt.sign(user, 'secret', {
+          expiresIn: '365d'
+        });
+        res.send({token, message: 'JWT created successfully!'})
+      })
     // post single article data
       app.post('/post-article', async(req,res)=>{
         const articleData=req.body;
