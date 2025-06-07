@@ -36,7 +36,14 @@ async function run() {
 
       // get all article data
       app.get('/articles',async(req,res)=>{
-        const allArticles=await articlesCollection.find().toArray();
+        const {searchParams}=req.query;
+        let filter={};
+        if(searchParams){
+          filter={
+            title:{$regex:searchParams, $options:'i'}
+          }
+        }
+        const allArticles=await articlesCollection.find(filter).toArray();
         res.send(allArticles)
       });
 
@@ -49,6 +56,16 @@ async function run() {
         const result=await articlesCollection.findOne(filter);
         res.send(result)
         
+      });
+
+      // get author wise articles
+      app.get('/my-articles/:email', async(req,res)=>{
+        const {email}=req.params;
+        const filter={
+          authorEmail: email
+        };
+        const allMyArticles=await articlesCollection.find(filter).toArray();
+        res.send(allMyArticles);
       })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
