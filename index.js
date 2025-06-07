@@ -17,7 +17,7 @@ const tokenVerify = (req, res, next) => {
   if (!authHeader) {
     return res.status(401).send('Unauthorized access')
   }
-  const token = authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
   if (!token) {
     return res.status(401).send('Unauthorized access')
   }
@@ -27,9 +27,9 @@ const tokenVerify = (req, res, next) => {
         res.status(403).send('Forbidden access')
       }
       req.decoded=decoded
+      next()
     })
   }
-  next()
 }
 
 
@@ -90,8 +90,11 @@ async function run() {
 
     // get author wise articles
     app.get('/my-articles/:email', tokenVerify, async (req, res) => {
-
+      const decodedEmail=req.decoded.email;
       const { email } = req.params;
+      if(decodedEmail!==email){
+        return res.status(403).send('Forbidden access!')
+      }
       const filter = {
         authorEmail: email
       };
