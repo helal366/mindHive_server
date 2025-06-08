@@ -93,13 +93,18 @@ async function run() {
     });
 
     // get a single article by id
-    app.get('/article/:id', tokenVerify, emailVerify, async (req, res) => {
+    app.get('/article/:id', tokenVerify, async (req, res) => {
       const id = req.params.id;
       const filter = {
         _id: new ObjectId(id)
       };
-      const result = await articlesCollection.findOne(filter);
-      res.send(result)
+      const singleArticle = await articlesCollection.findOne(filter);
+      const email=singleArticle.authorEmail;
+      const decodedEmail=req.decoded.email
+      if(email!==decodedEmail){
+        return res.status(403).send('Forbidden access!')
+      }
+      res.send(singleArticle)
 
     });
 
