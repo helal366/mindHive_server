@@ -88,7 +88,7 @@ async function run() {
     });
 
     // get a single article by id
-    app.get('/article/:id', async (req, res) => {
+    app.get('/article/:id', tokenVerify, emailVerify, async (req, res) => {
       const id = req.params.id;
       const filter = {
         _id: new ObjectId(id)
