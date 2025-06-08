@@ -67,7 +67,7 @@ async function run() {
       res.send({ token, message: 'JWT created successfully!' })
     })
     // post single article data
-    app.post('/post-article', async (req, res) => {
+    app.post('/post-article', tokenVerify, emailVerify, async (req, res) => {
       const articleData = req.body;
       const result = await articlesCollection.insertOne(articleData);
       res.send(result);
