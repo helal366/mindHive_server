@@ -99,11 +99,11 @@ async function run() {
         _id: new ObjectId(id)
       };
       const singleArticle = await articlesCollection.findOne(filter);
-      const email=singleArticle.authorEmail;
-      const decodedEmail=req.decoded.email
-      if(email!==decodedEmail){
-        return res.status(403).send('Forbidden access!')
-      }
+      // const email=singleArticle.authorEmail;
+      // const decodedEmail=req.decoded.email
+      // if(email!==decodedEmail){
+      //   return res.status(403).send('Forbidden access!')
+      // }
       res.send(singleArticle)
 
     });
