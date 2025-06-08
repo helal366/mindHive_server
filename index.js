@@ -12,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // token related middlewares
+// token verify
 const tokenVerify = (req, res, next) => {
   const authHeader = req?.headers?.authorization;
   if (!authHeader) {
@@ -32,7 +33,16 @@ const tokenVerify = (req, res, next) => {
   }
 }
 
-
+// email verify
+const emailVerify=(req,res,next)=>{
+  const decodedEmail=req.decoded.email;
+  const { email } = req.params;
+  console.log(decodedEmail, email)
+  if(decodedEmail!==email){
+        return res.status(403).send('Forbidden access!')
+      }
+  next()
+}
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(process.env.MONGODB_URI, {
   serverApi: {
@@ -89,12 +99,8 @@ async function run() {
     });
 
     // get author wise articles
-    app.get('/my-articles/:email', tokenVerify, async (req, res) => {
-      const decodedEmail=req.decoded.email;
-      const { email } = req.params;
-      if(decodedEmail!==email){
-        return res.status(403).send('Forbidden access!')
-      }
+    app.get('/my-articles/:email', tokenVerify, emailVerify, async (req, res) => {     
+      const { email } = req.params;     
       const filter = {
         authorEmail: email
       };
