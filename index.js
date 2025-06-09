@@ -27,20 +27,20 @@ const tokenVerify = (req, res, next) => {
       if (err) {
         res.status(403).send('Forbidden access')
       }
-      req.decoded=decoded
+      req.decoded = decoded
       next()
     })
   }
 }
 
 // email verify
-const emailVerify=(req,res,next)=>{
-  const decodedEmail=req.decoded.email;
+const emailVerify = (req, res, next) => {
+  const decodedEmail = req.decoded.email;
   const { email } = req.params;
   console.log(decodedEmail, email)
-  if(decodedEmail!==email){
-        return res.status(403).send('Forbidden access!')
-      }
+  if (decodedEmail !== email) {
+    return res.status(403).send('Forbidden access!')
+  }
   next()
 }
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -69,9 +69,9 @@ async function run() {
     // post single article data
     app.post('/post-article', tokenVerify, async (req, res) => {
       const articleData = req.body;
-      const email=articleData.authorEmail;
-      const decodedEmail=req.decoded.email;
-      if(email!==decodedEmail){
+      const email = articleData.authorEmail;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
         return res.status(403).send('Forbidden access!')
       }
       const result = await articlesCollection.insertOne(articleData);
@@ -95,6 +95,9 @@ async function run() {
     // get a single article by id
     app.get('/article/:id', tokenVerify, async (req, res) => {
       const id = req.params.id;
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).send('Invalid article ID format');
+      }
       const filter = {
         _id: new ObjectId(id)
       };
@@ -108,9 +111,25 @@ async function run() {
 
     });
 
+    // update single article and find by id
+    app.put('/article/:id', (req,res)=>{
+      const {id}=req.params;
+      const filter={
+        _id: new ObjectId(id)
+      };
+      const updeatedDoc=req.body;
+      const update={
+        $set:{
+          ...updeatedDoc
+        }
+      };
+      const result=articlesCollection.updateOne(filter, update);
+      res.send(result);
+    })
+
     // get author wise articles
-    app.get('/my-articles/:email', tokenVerify, emailVerify, async (req, res) => {     
-      const { email } = req.params;     
+    app.get('/my-articles/:email', tokenVerify, emailVerify, async (req, res) => {
+      const { email } = req.params;
       const filter = {
         authorEmail: email
       };
@@ -121,8 +140,7 @@ async function run() {
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
+   
   }
 }
 run().catch(console.dir);
