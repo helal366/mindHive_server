@@ -112,7 +112,7 @@ async function run() {
     });
 
     // update single article and find by id
-    app.put('/article/:id', (req,res)=>{
+    app.put('/update-article/:id', tokenVerify, async(req,res)=>{
       const {id}=req.params;
       const filter={
         _id: new ObjectId(id)
@@ -123,8 +123,17 @@ async function run() {
           ...updeatedDoc
         }
       };
-      const result=articlesCollection.updateOne(filter, update);
+      const result=await articlesCollection.updateOne(filter, update);
       res.send(result);
+    });
+    //delete article filtering by id
+    app.delete('/delete-article/:id', async(req,res)=>{
+      const {id}=req.params;
+      const filter={
+        _id: new ObjectId(id)
+      }
+      const result=await articlesCollection.deleteOne(filter);
+      res.send(result)
     })
 
     // get author wise articles
