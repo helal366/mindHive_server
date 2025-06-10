@@ -18,14 +18,14 @@ const tokenVerify = (req, res, next) => {
   if (!authHeader) {
     return res.status(401).send('Unauthorized access')
   }
-  const token = authHeader?.split(' ')[1];
+  const token = authHeader.split(' ')[1];
   if (!token) {
     return res.status(401).send('Unauthorized access')
   }
   if (token) {
     jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
       if (err) {
-        res.status(403).send('Forbidden access')
+        return res.status(403).send('Forbidden access')
       }
       req.decoded = decoded
       next()
@@ -114,23 +114,35 @@ async function run() {
     // update single article and find by id
     app.put('/update-article/:id', tokenVerify, async(req,res)=>{
       const {id}=req.params;
+      const decodedEmail=req.decoded.email
       const filter={
         _id: new ObjectId(id)
       };
-      const updeatedDoc=req.body;
+      const article=await articlesCollection.findOne(filter);
+      const userEmail=article.authorEmail;
+      if(!article || userEmail!==decodedEmail){
+        return res.status(403).send('Forbidden access!')
+      }
+      const updatedDoc=req.body;
       const update={
         $set:{
-          ...updeatedDoc
+          ...updatedDoc
         }
       };
       const result=await articlesCollection.updateOne(filter, update);
       res.send(result);
     });
     //delete article filtering by id
-    app.delete('/delete-article/:id', async(req,res)=>{
+    app.delete('/delete-article/:id', tokenVerify, async(req,res)=>{
       const {id}=req.params;
+      const decodedEmail=req.decoded.email
       const filter={
         _id: new ObjectId(id)
+      }
+      const article=await articlesCollection.findOne(filter);
+      const userEmail=article.authorEmail;
+      if(!article || userEmail!==decodedEmail){
+        return res.status(403).send('Forbidden access!')
       }
       const result=await articlesCollection.deleteOne(filter);
       res.send(result)
@@ -144,6 +156,24 @@ async function run() {
       };
       const allMyArticles = await articlesCollection.find(filter).toArray();
       res.send(allMyArticles);
+    })
+
+    // app patch to upsert likes in article collections
+    app.patch('/article-like/:id', async(req,res)=>{
+      const {id}=req.params;
+      const likes=req.body.likeCount;
+      const likedUsers=req.body.likedUsers
+      const query={
+        _id: new ObjectId(id)
+      };
+      const updeatedDoc={
+        $set: {
+          likes, likedUsers
+        }
+      };
+      const options={upsert: true};
+      const result=await articlesCollection.updateOne(query, updeatedDoc, options);
+      res.send(result)
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
