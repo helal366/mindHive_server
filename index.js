@@ -57,7 +57,7 @@ async function run() {
 
     const database = client.db('mindHive');
     const articlesCollection = database.collection('articles');
-    const commentsCollection=database.collection('comments');
+    const commentsCollection = database.collection('comments');
 
     // jwt post api
     app.post('/jwt', (req, res) => {
@@ -80,9 +80,9 @@ async function run() {
     })
 
     // single comment post
-    app.post('/comment', tokenVerify, async(req,res)=>{
-      const commentInfo=req.body;
-      const result=await commentsCollection.insertOne(commentInfo);
+    app.post('/comment', tokenVerify, async (req, res) => {
+      const commentInfo = req.body;
+      const result = await commentsCollection.insertOne(commentInfo);
       res.send(result)
     })
 
@@ -100,6 +100,20 @@ async function run() {
       res.send(allArticles)
     });
 
+    // get all comments sorted by article id
+    app.get('/comments/:articleID', tokenVerify, async (req, res) => {
+      const { articleID } = req.params;
+      console.log(articleID);
+      if (!ObjectId.isValid(articleID)) {
+        return res.status(400).send('Invalid article ID format');
+      }
+
+      const filter = { articleID };
+      const articleComments = await commentsCollection.find(filter).toArray()
+      console.log(articleComments)
+      res.send(articleComments)
+    })
+
     // get a single article by id
     app.get('/article/:id', tokenVerify, async (req, res) => {
       const id = req.params.id;
@@ -110,49 +124,44 @@ async function run() {
         _id: new ObjectId(id)
       };
       const singleArticle = await articlesCollection.findOne(filter);
-      // const email=singleArticle.authorEmail;
-      // const decodedEmail=req.decoded.email
-      // if(email!==decodedEmail){
-      //   return res.status(403).send('Forbidden access!')
-      // }
       res.send(singleArticle)
 
     });
 
     // update single article and find by id
-    app.put('/update-article/:id', tokenVerify, async(req,res)=>{
-      const {id}=req.params;
-      const decodedEmail=req.decoded.email
-      const filter={
+    app.put('/update-article/:id', tokenVerify, async (req, res) => {
+      const { id } = req.params;
+      const decodedEmail = req.decoded.email
+      const filter = {
         _id: new ObjectId(id)
       };
-      const article=await articlesCollection.findOne(filter);
-      const userEmail=article.authorEmail;
-      if(!article || userEmail!==decodedEmail){
+      const article = await articlesCollection.findOne(filter);
+      const userEmail = article.authorEmail;
+      if (!article || userEmail !== decodedEmail) {
         return res.status(403).send('Forbidden access!')
       }
-      const updatedDoc=req.body;
-      const update={
-        $set:{
+      const updatedDoc = req.body;
+      const update = {
+        $set: {
           ...updatedDoc
         }
       };
-      const result=await articlesCollection.updateOne(filter, update);
+      const result = await articlesCollection.updateOne(filter, update);
       res.send(result);
     });
     //delete article filtering by id
-    app.delete('/delete-article/:id', tokenVerify, async(req,res)=>{
-      const {id}=req.params;
-      const decodedEmail=req.decoded.email
-      const filter={
+    app.delete('/delete-article/:id', tokenVerify, async (req, res) => {
+      const { id } = req.params;
+      const decodedEmail = req.decoded.email
+      const filter = {
         _id: new ObjectId(id)
       }
-      const article=await articlesCollection.findOne(filter);
-      const userEmail=article.authorEmail;
-      if(!article || userEmail!==decodedEmail){
+      const article = await articlesCollection.findOne(filter);
+      const userEmail = article.authorEmail;
+      if (!article || userEmail !== decodedEmail) {
         return res.status(403).send('Forbidden access!')
       }
-      const result=await articlesCollection.deleteOne(filter);
+      const result = await articlesCollection.deleteOne(filter);
       res.send(result)
     })
 
@@ -167,29 +176,29 @@ async function run() {
     })
 
     // app patch to upsert likes in article collections
-    app.patch('/article-like/:id', tokenVerify, async(req,res)=>{
-      const {id}=req.params;
-      const likes=req.body.likes;
-      const likedUsers=req.body.likedUsers
-      const query={
+    app.patch('/article-like/:id', tokenVerify, async (req, res) => {
+      const { id } = req.params;
+      const likes = req.body.likes;
+      const likedUsers = req.body.likedUsers
+      const query = {
         _id: new ObjectId(id)
       };
-      const updatedDoc={
+      const updatedDoc = {
         $set: {
           likes, likedUsers
         }
       };
-      const options={upsert: true};
-      const result=await articlesCollection.updateOne(query, updatedDoc, options);
+      const options = { upsert: true };
+      const result = await articlesCollection.updateOne(query, updatedDoc, options);
       res.send(result)
     });
 
-    
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
-   
+
   }
 }
 run().catch(console.dir);
