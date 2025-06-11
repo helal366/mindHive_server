@@ -1,5 +1,5 @@
-const express = require('express');
 require('dotenv').config();
+const express = require('express');
 const cors = require('cors');
 const app = express();
 const jwt = require('jsonwebtoken')
@@ -57,6 +57,7 @@ async function run() {
 
     const database = client.db('mindHive');
     const articlesCollection = database.collection('articles');
+    const commentsCollection=database.collection('comments');
 
     // jwt post api
     app.post('/jwt', (req, res) => {
@@ -76,6 +77,13 @@ async function run() {
       }
       const result = await articlesCollection.insertOne(articleData);
       res.send(result);
+    })
+
+    // single comment post
+    app.post('/comment', tokenVerify, async(req,res)=>{
+      const commentInfo=req.body;
+      const result=await commentsCollection.insertOne(commentInfo);
+      res.send(result)
     })
 
     // get all article data
@@ -159,25 +167,27 @@ async function run() {
     })
 
     // app patch to upsert likes in article collections
-    app.patch('/article-like/:id', async(req,res)=>{
+    app.patch('/article-like/:id', tokenVerify, async(req,res)=>{
       const {id}=req.params;
-      const likes=req.body.likeCount;
+      const likes=req.body.likes;
       const likedUsers=req.body.likedUsers
       const query={
         _id: new ObjectId(id)
       };
-      const updeatedDoc={
+      const updatedDoc={
         $set: {
           likes, likedUsers
         }
       };
       const options={upsert: true};
-      const result=await articlesCollection.updateOne(query, updeatedDoc, options);
+      const result=await articlesCollection.updateOne(query, updatedDoc, options);
       res.send(result)
-    })
+    });
+
+    
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
    
   }
