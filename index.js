@@ -139,7 +139,8 @@ async function run() {
 
     app.get('/category-articles/:category', async(req,res)=>{
       const {category}=req.params;
-      const filter={category};
+      const decodedCategory=decodeURIComponent(category)
+      const filter={category:decodedCategory};
       const categoryArticles= await articlesCollection.find(filter).toArray();
       // console.log(categoryArticles);
       res.send(categoryArticles)
