@@ -1,5 +1,4 @@
 require('dotenv').config();
-import TopPostedUssers from './../client-mind-hive/src/components/homePageComponents/topContributors/TopPostedUssers';
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -7,9 +6,13 @@ const jwt = require('jsonwebtoken')
 const port = process.env.PORT || 3000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
-
+const corsOptions = {
+  origin: ['http://localhost:5173', 'https://server-mind-hive.vercel.app'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  credentials: true
+};
 // middlewire
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // token related middlewares
@@ -56,7 +59,7 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 
 async function run() {
   try {
-    // await client.connect();
+    await client.connect();
 
     const database = client.db('mindHive');
     const articlesCollection = database.collection('articles');
@@ -132,49 +135,93 @@ async function run() {
     });
 
     // get article categories aggregate group
-    app.get('/categories', async(req,res)=>{
-      const categories=await articlesCollection.aggregate([{$group: {_id:"$category"}}]).toArray();
+    app.get('/categories', async (req, res) => {
+      const categories = await articlesCollection.aggregate([{ $group: { _id: "$category" } }]).toArray();
       // console.log(categories)
       res.send(categories)
     });
 
     //get category wise articles  
-    app.get('/category-articles/:category', async(req,res)=>{
-      const {category}=req.params;
-      const decodedCategory=decodeURIComponent(category)
-      const filter={category:decodedCategory};
-      const categoryArticles= await articlesCollection.find(filter).toArray();
+    app.get('/category-articles/:category', async (req, res) => {
+      const { category } = req.params;
+      const decodedCategory = decodeURIComponent(category)
+      const filter = { category: decodedCategory };
+      const categoryArticles = await articlesCollection.find(filter).toArray();
       // console.log(categoryArticles);
       res.send(categoryArticles)
     });
 
     // get most liked articles by aggregate and sort and limit
-    app.get('/populars', async(req,res)=>{
-      const popularArticles=await articlesCollection.aggregate([
-        {$sort:{likes:-1, _id:1}}, {$limit:6}
+    app.get('/populars', async (req, res) => {
+      const popularArticles = await articlesCollection.aggregate([
+        { $sort: { likes: -1, _id: 1 } }, { $limit: 6 }
       ]).toArray();
       res.send(popularArticles)
     })
 
     // get top posted users by aggregate and group 
-    app.get('/top-posted-users',async(req,res)=>{
-      const TopPostedUssers=await articlesCollection.aggregate([
-        {$group:{
-          _id:{
-            authorName: '$authorName',
-            authorEmail: '$authorEmail',
-            authorPhoto: '$authorPhoto'
-          },
-          articleCount:{$sum:1}
-        }},
-        {$sort:{
-          articleCount: -1,
-          '_id.authorName': 1
-        }},
-        {$limit:5}
-    ]).toArray();
-    res.send(TopPostedUssers)
+    app.get('/top-posted-users', async (req, res) => {
+      const topPostedUsers = await articlesCollection.aggregate([
+        {
+          $group: {
+            _id: {
+              authorName: '$authorName',
+              authorEmail: '$authorEmail',
+              authorPhoto: '$authorPhoto'
+            },
+            articleCount: { $sum: 1 }
+          }
+        },
+        {
+          $sort: {
+            articleCount: -1,
+            '_id.authorName': 1
+          }
+        },
+        { $limit: 5 }
+      ]).toArray();
+      res.send(topPostedUsers)
     });
+
+    // get top commenters 
+    app.get('/most-commenters', async (req, res) => {
+      const topCommenters = await commentsCollection.aggregate([
+        { $group: { _id: "$articleID", commentCount: { $sum: 1 } } },
+        { $sort: { commentCount: -1 } },
+        { $limit: 6 },
+        {
+          $lookup: {
+            from: "articles",
+            localField: "_id",
+            foreignField: "_id",
+            as: "articleInfo"
+          }
+        },
+        { $unwind: "$articleInfo" }
+      ]).toArray();
+
+      res.send(topCommenters);
+    });
+
+    // get top likers
+    const topLikers = await articlesCollection.aggregate([
+      // Deconstruct likedUsers array so each like is a separate document
+      { $unwind: "$likedUsers" },
+
+      // Group by likedUser email/id and count how many times they liked articles
+      {
+        $group: {
+          _id: "$likedUsers",  // assuming likedUsers is an array of user emails
+          likeCount: { $sum: 1 }
+        }
+      },
+
+      // Sort descending by likeCount (most likes first)
+      { $sort: { likeCount: -1 } },
+
+      // Limit to top 5 likers (adjust as needed)
+      { $limit: 5 }
+    ]).toArray();
     // update single article and find by id
     app.put('/update-article/:id', tokenVerify, async (req, res) => {
       const { id } = req.params;
@@ -242,8 +289,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
-    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    await client.db("admin").command({ ping: 1 });
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
 
   }
