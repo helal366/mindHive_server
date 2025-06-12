@@ -137,6 +137,7 @@ async function run() {
       res.send(categories)
     });
 
+    //get category wise articles  
     app.get('/category-articles/:category', async(req,res)=>{
       const {category}=req.params;
       const decodedCategory=decodeURIComponent(category)
@@ -144,8 +145,15 @@ async function run() {
       const categoryArticles= await articlesCollection.find(filter).toArray();
       // console.log(categoryArticles);
       res.send(categoryArticles)
-    })
+    });
 
+    // get most likes articles by aggregate and sort and limit
+    app.get('/populars', async(req,res)=>{
+      const popularArticles=await articlesCollection.aggregate([
+        {$sort:{likes:-1, _id:1}}, {$limit:6}
+      ]).toArray();
+      res.send(popularArticles)
+    })
     // update single article and find by id
     app.put('/update-article/:id', tokenVerify, async (req, res) => {
       const { id } = req.params;
