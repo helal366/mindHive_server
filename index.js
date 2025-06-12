@@ -130,11 +130,19 @@ async function run() {
 
     });
 
-    // get distinct article categories
+    // get article categories aggregate group
     app.get('/categories', async(req,res)=>{
       const categories=await articlesCollection.aggregate([{$group: {_id:"$category"}}]).toArray();
       // console.log(categories)
       res.send(categories)
+    });
+
+    app.get('/category-articles/:category', async(req,res)=>{
+      const {category}=req.params;
+      const filter={category};
+      const categoryArticles= await articlesCollection.find(filter).toArray();
+      // console.log(categoryArticles);
+      res.send(categoryArticles)
     })
 
     // update single article and find by id
