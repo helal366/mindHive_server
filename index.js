@@ -1,4 +1,5 @@
 require('dotenv').config();
+import TopPostedUssers from './../client-mind-hive/src/components/homePageComponents/topContributors/TopPostedUssers';
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -55,7 +56,7 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const database = client.db('mindHive');
     const articlesCollection = database.collection('articles');
@@ -147,13 +148,33 @@ async function run() {
       res.send(categoryArticles)
     });
 
-    // get most likes articles by aggregate and sort and limit
+    // get most liked articles by aggregate and sort and limit
     app.get('/populars', async(req,res)=>{
       const popularArticles=await articlesCollection.aggregate([
         {$sort:{likes:-1, _id:1}}, {$limit:6}
       ]).toArray();
       res.send(popularArticles)
     })
+
+    // get top posted users by aggregate and group 
+    app.get('/top-posted-users',async(req,res)=>{
+      const TopPostedUssers=await articlesCollection.aggregate([
+        {$group:{
+          _id:{
+            authorName: '$authorName',
+            authorEmail: '$authorEmail',
+            authorPhoto: '$authorPhoto'
+          },
+          articleCount:{$sum:1}
+        }},
+        {$sort:{
+          articleCount: -1,
+          '_id.authorName': 1
+        }},
+        {$limit:5}
+    ]).toArray();
+    res.send(TopPostedUssers)
+    });
     // update single article and find by id
     app.put('/update-article/:id', tokenVerify, async (req, res) => {
       const { id } = req.params;
@@ -221,8 +242,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
 
   }
