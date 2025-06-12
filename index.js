@@ -48,12 +48,14 @@ const client = new MongoClient(process.env.MONGODB_URI, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
+    // strict: false,
     deprecationErrors: true,
   }
 });
 
 async function run() {
   try {
+    await client.connect();
 
     const database = client.db('mindHive');
     const articlesCollection = database.collection('articles');
@@ -89,7 +91,7 @@ async function run() {
     // get all article data
     app.get('/articles', async (req, res) => {
       const { searchParams } = req.query;
-      console.log(searchParams)
+      // console.log(searchParams)
       let filter = {};
       if (searchParams) {
         filter = {
@@ -103,14 +105,14 @@ async function run() {
     // get all comments sorted by article id
     app.get('/comments/:articleID', tokenVerify, async (req, res) => {
       const { articleID } = req.params;
-      console.log(articleID);
+      // console.log(articleID);
       if (!ObjectId.isValid(articleID)) {
         return res.status(400).send('Invalid article ID format');
       }
 
       const filter = { articleID };
       const articleComments = await commentsCollection.find(filter).toArray()
-      console.log(articleComments)
+      // console.log(articleComments)
       res.send(articleComments)
     })
 
@@ -127,6 +129,13 @@ async function run() {
       res.send(singleArticle)
 
     });
+
+    // get distinct article categories
+    app.get('/categories', async(req,res)=>{
+      const categories=await articlesCollection.aggregate([{$group: {_id:"$category"}}]).toArray();
+      // console.log(categories)
+      res.send(categories)
+    })
 
     // update single article and find by id
     app.put('/update-article/:id', tokenVerify, async (req, res) => {
@@ -195,8 +204,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
-    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    await client.db("admin").command({ ping: 1 });
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
 
   }
