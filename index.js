@@ -183,7 +183,7 @@ async function run() {
             '_id.authorName': 1
           }
         },
-        { $limit: 5 }
+        { $limit: 6 }
       ]).toArray();
       res.send(topPostedUsers)
     });
