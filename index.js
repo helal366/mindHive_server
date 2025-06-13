@@ -169,7 +169,12 @@ async function run() {
               authorEmail: '$authorEmail',
               authorPhoto: '$authorPhoto'
             },
-            articleCount: { $sum: 1 }
+            articleCount: { $sum: 1 },
+            articleData: {$push:{
+              title:'$title',
+              publicationDate:'$publicationDate',
+              category: '$category'
+            }}
           }
         },
         {
@@ -186,42 +191,57 @@ async function run() {
     // get top commenters 
     app.get('/most-commenters', async (req, res) => {
       const topCommenters = await commentsCollection.aggregate([
-        { $group: { _id: "$articleID", commentCount: { $sum: 1 } } },
-        { $sort: { commentCount: -1 } },
-        { $limit: 6 },
-        {
-          $lookup: {
-            from: "articles",
-            localField: "_id",
-            foreignField: "_id",
-            as: "articleInfo"
-          }
-        },
-        { $unwind: "$articleInfo" }
+        // {
+        //   $lookup: {
+        //     from: 'articles',
+        //     localField: 'articleID',
+        //     foreignField: '_id',
+        //     as: 'articleInfo'
+        //   }
+        // },
+        // {$unwind: '$articleInfo'},
+        { $group: { _id: 
+          {commenter: '$commenter',
+            commenterPhoto:'$commenterPhoto',
+            commenterEmail: '$commenterEmail'
+          },
+          commentCount: {$sum:1},
+          comments: {$push:{
+            articleTitle: '$articleTitle',
+            comment: '$comment',
+            // articleCategory: '$articleInfo.category'
+          }}
+          } },
+        { $sort: { commentCount: -1, '_id.commenter':1 } },
+        { $limit: 6 }
       ]).toArray();
 
       res.send(topCommenters);
     });
 
     // get top likers
-    const topLikers = await articlesCollection.aggregate([
-      // Deconstruct likedUsers array so each like is a separate document
-      { $unwind: "$likedUsers" },
+    app.get('/most-likers', async(req,res)=>{
 
-      // Group by likedUser email/id and count how many times they liked articles
-      {
-        $group: {
-          _id: "$likedUsers",  // assuming likedUsers is an array of user emails
-          likeCount: { $sum: 1 }
-        }
-      },
-
-      // Sort descending by likeCount (most likes first)
-      { $sort: { likeCount: -1 } },
-
-      // Limit to top 5 likers (adjust as needed)
-      { $limit: 5 }
-    ]).toArray();
+      const topLikers = await articlesCollection.aggregate([
+        // Deconstruct likedUsers array so each like is a separate document
+        { $unwind: "$likedUsers" },
+  
+        // Group by likedUser email/id and count how many times they liked articles
+        {
+          $group: {
+            _id: "$likedUsers",  // assuming likedUsers is an array of user emails
+            likeCount: { $sum: 1 }
+          }
+        },
+  
+        // Sort descending by likeCount (most likes first)
+        { $sort: { likeCount: -1 } },
+  
+        // Limit to top 5 likers (adjust as needed)
+        { $limit: 5 }
+      ]).toArray();
+      res.send(topLikers)
+    })
     // update single article and find by id
     app.put('/update-article/:id', tokenVerify, async (req, res) => {
       const { id } = req.params;
