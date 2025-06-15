@@ -7,7 +7,7 @@ const port = process.env.PORT || 3000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const corsOptions = {
-  origin: ['http://localhost:5173', 'https://server-mind-hive.vercel.app'],
+  origin: ['http://localhost:5173', 'https://mind-hive-9313b.web.app'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true
 };
@@ -41,7 +41,6 @@ const tokenVerify = (req, res, next) => {
 const emailVerify = (req, res, next) => {
   const decodedEmail = req.decoded.email;
   const { email } = req.params;
-  console.log(decodedEmail, email)
   if (decodedEmail !== email) {
     return res.status(403).send('Forbidden access!')
   }
@@ -59,7 +58,7 @@ const client = new MongoClient(process.env.MONGODB_URI, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const database = client.db('mindHive');
     const articlesCollection = database.collection('articles');
@@ -69,7 +68,7 @@ async function run() {
     app.post('/jwt', (req, res) => {
       const user = { email: req.body.email };
       const token = jwt.sign(user, process.env.JWT_SECRET_KEY, {
-        expiresIn: '365d'
+        expiresIn: '7d'
       });
       res.send({ token, message: 'JWT created successfully!' })
     })
@@ -95,7 +94,6 @@ async function run() {
     // get all article data
     app.get('/articles', async (req, res) => {
       const { searchParams } = req.query;
-      // console.log(searchParams)
       let filter = {};
       if (searchParams) {
         filter = {
@@ -109,14 +107,12 @@ async function run() {
     // get all comments sorted by article id
     app.get('/comments/:articleID', tokenVerify, async (req, res) => {
       const { articleID } = req.params;
-      // console.log(articleID);
       if (!ObjectId.isValid(articleID)) {
         return res.status(400).send('Invalid article ID format');
       }
 
       const filter = { articleID };
       const articleComments = await commentsCollection.find(filter).toArray()
-      // console.log(articleComments)
       res.send(articleComments)
     })
 
@@ -137,7 +133,6 @@ async function run() {
     // get article categories aggregate group
     app.get('/categories', async (req, res) => {
       const categories = await articlesCollection.aggregate([{ $group: { _id: "$category" } }]).toArray();
-      // console.log(categories)
       res.send(categories)
     });
 
@@ -147,7 +142,6 @@ async function run() {
       const decodedCategory = decodeURIComponent(category)
       const filter = { category: decodedCategory };
       const categoryArticles = await articlesCollection.find(filter).toArray();
-      // console.log(categoryArticles);
       res.send(categoryArticles)
     });
 
@@ -220,28 +214,7 @@ async function run() {
     });
 
     // get top likers
-    app.get('/most-likers', async(req,res)=>{
-
-      const topLikers = await articlesCollection.aggregate([
-        // Deconstruct likedUsers array so each like is a separate document
-        { $unwind: "$likedUsers" },
-  
-        // Group by likedUser email/id and count how many times they liked articles
-        {
-          $group: {
-            _id: "$likedUsers",  // assuming likedUsers is an array of user emails
-            likeCount: { $sum: 1 }
-          }
-        },
-  
-        // Sort descending by likeCount (most likes first)
-        { $sort: { likeCount: -1 } },
-  
-        // Limit to top 5 likers (adjust as needed)
-        { $limit: 5 }
-      ]).toArray();
-      res.send(topLikers)
-    })
+    
     // update single article and find by id
     app.put('/update-article/:id', tokenVerify, async (req, res) => {
       const { id } = req.params;
@@ -309,8 +282,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
 
   }
