@@ -107,10 +107,6 @@ async function run() {
     // get all comments sorted by article id
     app.get('/comments/:articleID', tokenVerify, async (req, res) => {
       const { articleID } = req.params;
-      if (!ObjectId.isValid(articleID)) {
-        return res.status(400).send('Invalid article ID format');
-      }
-
       const filter = { articleID };
       const articleComments = await commentsCollection.find(filter).toArray()
       res.send(articleComments)
@@ -119,9 +115,6 @@ async function run() {
     // get a single article by id
     app.get('/article/:id', tokenVerify, async (req, res) => {
       const id = req.params.id;
-      if (!ObjectId.isValid(id)) {
-        return res.status(400).send('Invalid article ID format');
-      }
       const filter = {
         _id: new ObjectId(id)
       };
@@ -289,11 +282,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
-
-
-
-
 
 app.get('/', (req, res) => {
   res.send(`Welcome to mind hive!`)
