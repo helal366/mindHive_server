@@ -105,7 +105,7 @@ async function run() {
     });
 
     // get all comments sorted by article id
-    app.get('/comments/:articleID', tokenVerify, async (req, res) => {
+    app.get('/comments/:articleID',  async (req, res) => {
       const { articleID } = req.params;
       const filter = { articleID };
       const articleComments = await commentsCollection.find(filter).toArray()
