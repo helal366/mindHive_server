@@ -7,7 +7,7 @@ const port = process.env.PORT || 3000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const corsOptions = {
-  origin: ['http://localhost:5173', 'https://server-mind-hive-eta.vercel.app'],
+  origin: ['http://localhost:5173', 'https://server-mind-hive-eta.vercel.app', 'https://mind-hive-9313b.web.app'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true
 };
